@@ -1,0 +1,15 @@
+MOV R0, 15
+MOV R1, 3
+CALL divide
+END
+
+divide:
+MOV R2, 0
+MOV R3, 0
+MOV R4, 1
+loop:
+ADD R3, R4
+SUB R0, R1
+CMP R0, R2
+JNZ loop
+RET

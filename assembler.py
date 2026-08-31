@@ -59,6 +59,7 @@ def assemble_line(line, labels):
                 raise ValueError("Address out of range")
 
             return [0x08, register, address]
+
         case "STORE":
             register = parse_register(parts[1])
             address = int(parts[2])
@@ -67,19 +68,30 @@ def assemble_line(line, labels):
                 raise ValueError("Address out of range")
 
             return [0x09, register, address]
+        case "PUSH":
+            register = parse_register(parts[1])
+            return [0x0a, register]
+        case "POP":
+            register = parse_register(parts[1])
+            return [0x0b, register]
+        case "CALL":
+            address = parse_address(parts[1], labels)
+            return [0x0c, address]
+        case "RET":
+            return [0x0d]
         case "END":
             return [0xff]
         case _:
-            raise ValueError("Invalid OPcode")
+            raise SyntaxError("Invalid OPcode")
 
 def instruction_size(line):
     parts = line.replace(',', '').split()
     instruction = parts[0]
 
     match instruction:
-        case "NOP" | "END":
+        case "NOP" | "END" | "RET":
             return 1
-        case "JMP" | "JZ" | "JNZ":
+        case "JMP" | "JZ" | "JNZ" | "POP" | "PUSH" | "CALL":
             return 2
         case "MOV" | "ADD" | "SUB" | "CMP" | "LOAD" | "STORE":
             return 3
@@ -96,7 +108,7 @@ def find_labels(program):
         if not line:
             continue
         if ":" in line and not line.endswith(":"):
-            raise ValueError("Invalid sintax")
+            raise IndexError("Invalid sintax")
         if line.endswith(":"):
             label = line[:-1]
 
@@ -126,3 +138,19 @@ def assemble(program):
         memory.extend(instruction)
 
     return memory
+
+def main():
+    with open("program.asm", "r") as file:
+        program = file.read()
+
+    memory = assemble(program)
+
+    if len(memory) > 256:
+        raise ValueError("Program too large for memory")
+
+    with open("program.bin", "wb") as file:
+        file.write(bytes(memory))
+
+
+if __name__ == "__main__":
+    main()

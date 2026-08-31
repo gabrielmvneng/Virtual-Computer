@@ -2,6 +2,7 @@ class Cpu:
     def __init__(self):
         self.registers = [0, 0, 0, 0, 0]
         self.pc = 0
+        self.sp = 255
         self.halted = False
         self.flags = {
             "zero": False,
@@ -87,29 +88,54 @@ class Cpu:
                 if self.is_imput_valid(register):
                     memory[local] = self.registers[register]
                     self.pc += 3
+            case 0x0a:
+                register = memory[self.pc + 1]
+                if self.is_imput_valid(register):
+                    self.sp -= 1
+                    if self.sp < 128:
+                        raise OverflowError("Stack overflow")
+                        self.halted = True
+                    memory[self.sp] = self.registers[register]
+                    self.pc += 2
+            case 0x0b:
+                register = memory[self.pc + 1]
+                if self.is_imput_valid(register):
+                    if self.sp >= 255:
+                        raise OverflowError("Stack underflow")
+                        self.halted = True
+                    self.registers[register] = memory[self.sp]
+                    self.sp += 1
+                    self.pc += 2
+            case 0x0c:
+                address = memory[self.pc + 1]
+                return_address = self.pc + 2
+                self.sp -= 1
+                if self.sp < 128:
+                    raise OverflowError("Stack overflow")
+                memory[self.sp] = return_address
+                self.pc = address
+            case 0x0d:
+                self.pc = memory[self.sp]
+                self.sp += 1
+                if self.sp > 255:
+                    raise OverflowError("Stack underflow")
             case 0xFF:
                 self.halted = True
 
-memory = [0] * 256
-memory[0] = 0x00
-memory[1] = 0x01
-memory[2] = 0x00
-memory[3] = 5
-memory[4] = 0x01
-memory[5] = 0x01
-memory[6] = 0
-memory[7] = 0x01
-memory[8] = 0x02
-memory[9] = 1
-memory[10] = 0x03
-memory[11] = 0x00
-memory[12] = 0x02
-memory[13] = 0x04
-memory[14] = 0x00
-memory[15] = 0x01
-memory[16] = 0x07
-memory[17] = 0x0a
-memory[18] = 0xff
+def load_program(filename):
+    with open(filename, "rb") as file:
+        program = list(file.read())
+
+    if len(program) > 256:
+        raise ValueError("Program too large for memory")
+
+    memory = [0] * 256
+    memory[:len(program)] = program
+
+    return memory
+
+memory = load_program("program.bin")
+
 cpu = Cpu()
 while not cpu.halted:
     instruction = memory[cpu.pc]
