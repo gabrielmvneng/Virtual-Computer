@@ -53,21 +53,33 @@ def assemble_line(line, labels):
             return [0x07, address]
         case "LOAD":
             register = parse_register(parts[1])
-            address = int(parts[2])
+            address_str = parts[2]
 
-            if address < 0 or address > 255:
-                raise ValueError("Address out of range")
+            if address_str.startswith('[') and address_str.endswith(']'):
+                address_str = address_str[1:-1]
+                address = parse_register(address_str)
+                return [0x0e, register, address]
+            else:
+                address = int(address_str)
 
-            return [0x08, register, address]
+                if address < 0 or address > 255:
+                    raise ValueError("Address out of range")
+                return [0x08, register, address]
 
         case "STORE":
             register = parse_register(parts[1])
-            address = int(parts[2])
-
-            if address < 0 or address > 255:
-                raise ValueError("Address out of range")
-
-            return [0x09, register, address]
+            address_str = parts[2]
+            
+            if address_str.startswith('[') and address_str.endswith(']'):
+                address_str = address_str[1:-1]
+                address = parse_register(address_str)
+                return [0x0f, register, address]
+            else:
+                address = int(address_str)
+            
+                if address < 0 or address > 255:
+                    raise ValueError("Address out of range")
+                return [0x09, register, address]
         case "PUSH":
             register = parse_register(parts[1])
             return [0x0a, register]

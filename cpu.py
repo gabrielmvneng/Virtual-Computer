@@ -86,7 +86,10 @@ class Cpu:
                 register = memory[self.pc + 1]
                 local = memory[self.pc + 2]
                 if self.is_imput_valid(register):
-                    memory[local] = self.registers[register]
+                    if local == 0xf0:
+                        print(chr(self.registers[register]), end= '')
+                    else:
+                        memory[local] = self.registers[register]
                     self.pc += 3
             case 0x0a:
                 register = memory[self.pc + 1]
@@ -94,7 +97,6 @@ class Cpu:
                     self.sp -= 1
                     if self.sp < 128:
                         raise OverflowError("Stack overflow")
-                        self.halted = True
                     memory[self.sp] = self.registers[register]
                     self.pc += 2
             case 0x0b:
@@ -102,7 +104,6 @@ class Cpu:
                 if self.is_imput_valid(register):
                     if self.sp >= 255:
                         raise OverflowError("Stack underflow")
-                        self.halted = True
                     self.registers[register] = memory[self.sp]
                     self.sp += 1
                     self.pc += 2
@@ -119,6 +120,21 @@ class Cpu:
                 self.sp += 1
                 if self.sp > 255:
                     raise OverflowError("Stack underflow")
+            case 0x0e:
+                register = memory[self.pc + 1]
+                local = memory[self.pc +2]
+                if self.is_imput_valid(register, local):
+                    self.registers[register] = memory[self.registers[local]]
+                    self.pc += 3
+            case 0x0f:
+                register = memory[self.pc + 1]
+                local = memory[self.pc + 2]
+                if self.is_imput_valid(register, local):
+                    if self.registers[local] == 0xf0:
+                        print(chr(self.registers[register]), end= '')
+                    else:
+                        memory[self.registers[local]] = self.registers[register]
+                    self.pc += 3
             case 0xFF:
                 self.halted = True
 
@@ -140,4 +156,3 @@ cpu = Cpu()
 while not cpu.halted:
     instruction = memory[cpu.pc]
     cpu.execute(instruction, memory)
-print(cpu.registers)
